@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="スマホゲームアプリ『ドラゴンクエスト スマッシュグロウ』の最適なメモリ組合せを計算する非公式シミュレータです。">
+    <title>DQスマグロ メモリシミュレータ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('simTab')">シミュレータ</button>
+    <button class="tab-btn" onclick="switchTab('manageTab')">メモリ管理</button>
+</div>
+
+<!-- シミュレータ タブ -->
+<div id="simTab" class="tab-content active">
+    <div class="card">
+        <div class="card-header">
+            <h2>シミュレーション設定</h2>
+        </div>
+
+        <div class="setting-row">
+            <span class="setting-label">職業</span>
+            <select id="jobSelect" onchange="updateCostLimit()" style="width: 240px;">
+                <optgroup label="基本職">
+                    <option value="戦士">戦士（黄）</option>
+                    <option value="武闘家">武闘家（赤）</option>
+                    <option value="魔法使い">魔法使い（紫）</option>
+                    <option value="僧侶">僧侶（緑）</option>
+                    <option value="盗賊">盗賊（青）</option>
+                </optgroup>
+                <optgroup label="上級職">
+                    <option value="パラディン">パラディン（黄色＆緑）</option>
+                    <option value="賢者">賢者（紫＆緑）</option>
+                    <option value="レンジャー">レンジャー（赤＆青）</option>
+                </optgroup>
+            </select>
+        </div>
+
+        <div class="setting-row">
+            <span class="setting-label">レベル</span>
+            <div class="inline-group">
+                <input type="number" id="levelInput" value="50" min="1" max="55" oninput="updateCostLimit()" style="width: 90px;">
+                <span id="costLimitDisplay" class="cost-badge">[ コスト上限: -- ]</span>
+            </div>
+        </div>
+
+        <div class="setting-row">
+            <span class="setting-label">優先ステータス</span>
+            <div id="chipGrid" class="chip-grid"></div>
+        </div>
+
+        <div class="setting-row">
+            <span class="setting-label">表示件数</span>
+            <select id="topNSelect" style="width: 150px;">
+                <option value="5">上位 5件</option>
+                <option value="10">上位 10件</option>
+                <option value="20">上位 20件</option>
+            </select>
+        </div>
+
+        <div class="exec-area">
+            <button class="btn-submit" onclick="calculateOptimization()">実行</button>
+            <div class="exclude-status-group">
+                <span id="excludeCountText">[ 除外メモリ: 0枚 ]</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" id="resultCard" style="display:none;">
+        <div class="card-header">
+            <h2>結果</h2>
+        </div>
+        <div id="resultsContainer"></div>
+    </div>
+</div>
+
+<!-- メモリ管理 タブ -->
+<div id="manageTab" class="tab-content">
+    <!-- メモリの登録 -->
+    <details id="detailsAdd" class="card">
+        <summary class="card-summary">
+            <div class="card-header" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+                <h2><span class="collapse-indicator"></span>メモリの登録</h2>
+            </div>
+        </summary>
+        <div class="card-body-content" style="margin-top: 16px;">
+            <div class="form-grid">
+                <div class="form-grid-item" style="grid-column: span 2;">
+                    <label>メモリ名</label>
+                    <input type="text" id="addName" placeholder="例: プロトキラー Aランク">
+                </div>
+                <div class="form-grid-item">
+                    <label>色</label>
+                    <select id="addColor">
+                        <option value="y">黄</option>
+                        <option value="r">赤</option>
+                        <option value="p">紫</option>
+                        <option value="g">緑</option>
+                        <option value="b">青</option>
+                    </select>
+                </div>
+                <div class="form-grid-item">
+                    <label>コスト</label>
+                    <input type="number" id="addCost" value="10" min="1">
+                </div>
+            </div>
+            <div id="dynamicStatInputs" class="form-grid"></div>
+            <button class="btn-submit" onclick="addUserMemory()" style="max-width: 180px;">登録</button>
+        </div>
+    </details>
+
+    <!-- 登録したメモリ一覧 -->
+    <details id="detailsUser" class="card" open>
+        <summary class="card-summary">
+            <div class="card-header" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+                <h2 class="header-with-count">
+                    <span class="collapse-indicator"></span>登録したメモリ一覧
+                    <span id="userMemoryCountMessage" class="system-status">[ 0件 ]</span>
+                </h2>
+            </div>
+        </summary>
+        <div class="card-body-content" style="margin-top: 16px;" id="userMemoryContainer">
+            <p class="empty-message">登録したメモリはありません。</p>
+        </div>
+    </details>
+
+    <!-- 除外メモリ一覧 -->
+    <details id="detailsExclude" class="card" open>
+        <summary class="card-summary">
+            <div class="card-header" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+                <h2 class="header-with-count">
+                    <span class="collapse-indicator"></span>除外メモリ一覧
+                    <span id="excludeMemoryCountMessage" class="system-status">[ 0件 ]</span>
+                </h2>
+            </div>
+        </summary>
+        <div class="card-body-content" style="margin-top: 16px;" id="excludeMemoryContainer">
+            <div style="margin-bottom: 12px;">
+                <button class="btn-secondary" onclick="clearAllExclusions()">除外設定を一括解除</button>
+            </div>
+            <p class="empty-message">除外されているメモリはありません。</p>
+        </div>
+    </details>
+
+    <!-- メモリ一覧 -->
+    <details id="detailsManage" class="card">
+        <summary class="card-summary">
+            <div class="card-header" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+                <h2 class="header-with-count">
+                    <span class="collapse-indicator"></span>メモリ一覧
+                    <span id="manageCountMessage" class="system-status">[ 0件 ]</span>
+                </h2>
+            </div>
+        </summary>
+        <div class="card-body-content" style="margin-top: 16px;">
+            <p style="font-size: 13px; color: #6c757d; margin-top: -10px;">※ ヘッダーをタップすると並び替えできます。</p>
+            <!-- PC用表示テーブル -->
+            <div class="table-wrapper pc-only-result">
+                <table>
+                    <thead>
+                        <tr id="memoryTableHeader"></tr>
+                    </thead>
+                    <tbody id="memoryTableBody"></tbody>
+                </table>
+            </div>
+            <!-- スマホ用表示コンテナ -->
+            <div id="mobileManageContainer" class="mobile-only-result"></div>
+        </div>
+    </details>
+</div>
+
+<script src="script.js"></script>
+
+<!-- フッター -->
+<footer class="app-footer">
+    <div class="footer-links">
+        <a href="javascript:void(0)" onclick="openModal('aboutModal')">このツールについて</a> | 
+        <a href="javascript:void(0)" onclick="openModal('changelogModal')">更新履歴</a>
+    </div>
+    <div class="disclaimer">
+        <p>当ツールは、個人が制作した非公式のシミュレータです。</p>
+    </div>
+    <div class="copyright">
+        <p>© ARMOR PROJECT/BIRD STUDIO/SQUARE ENIX</p>
+        <p>© SUGIYAMA KOBO</p>
+        <p>Developed by KLabGames</p>
+    </div>
+</footer>
+
+<!-- 使い方モーダル -->
+<div id="aboutModal" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'aboutModal')">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>このツールについて</h3>
+            <button class="btn-close" onclick="closeModal('aboutModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <h4>使い方</h4>
+            
+            <p>このツールは、スマホゲーム『ドラゴンクエスト スマッシュグロウ』の最適なメモリ組合せを計算するシミュレータです。</p>
+
+            <p><strong>1. シミュレータ</strong></p>
+            <p>職業・レベル・優先したいステータスを選んで「実行」ボタンを押すと、
+            最適なメモリの組合せが表示されます。<br>
+            持っていないメモリが結果に含まれていた場合は「除外」ボタンを押しましょう。
+            次回以降は、そのメモリを使わない組合せを計算します。</p>
+
+            <p><strong>2. メモリ管理</strong></p>
+            <p>本シミュレータではSランクメモリの数値を使っています。
+            それ以外のメモリを使うには「メモリの登録」が便利です。<br>
+            「登録したメモリ一覧」から、登録したメモリの確認と削除ができます。<br>
+            「除外メモリ一覧」では、シミュレーションから除外したメモリの除外解除ができます。<br>
+            「メモリ一覧」は、シミュレータに実装されているメモリの一覧です。手作業で更新しています。</p>
+
+            <h4>注意事項</h4>
+            <ul>
+                <li>当ツールは個人が制作した非公式シミュレータです。計算結果の正確性を保証するものではありません。</li>
+                <li>本ツールの利用により生じた損害等について、作者は一切の責任を負いません。</li>
+                <li>当ツール内の名称、数値データ等の知的財産権は各権利者に帰属します。</li>
+            </ul>
+
+            <h4>作者より</h4>
+            <p>上級職に対応したメモリシミュレータがなかったので作りました。
+            ご意見・ご要望・不具合の報告は作者のXまでお願いします。<br>
+            <a href="https://x.com/sngn88_dq" target="_blank" rel="noopener">作者X: @sngn88_dq</a></p>
+        </div>
+    </div>
+</div>
+
+<!-- 更新履歴モーダル -->
+<div id="changelogModal" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'changelogModal')">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>更新履歴</h3>
+            <button class="btn-close" onclick="closeModal('changelogModal')">×</button>
+        </div>
+        <div class="modal-body" id="changelogContainer">
+            <!-- script.js から動的に生成 -->
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
