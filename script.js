@@ -7,7 +7,10 @@ const JOBS = {
     '盗賊': { colors: ['b'], slots: 3, type: 'basic' },
     'パラディン': { colors: ['g', 'y'], slots: 4, type: 'advanced' },
     '賢者': { colors: ['g', 'p'], slots: 4, type: 'advanced' },
-    'レンジャー': { colors: ['r', 'b'], slots: 4, type: 'advanced' }
+    'レンジャー': { colors: ['r', 'b'], slots: 4, type: 'advanced' },
+    'バトルマスター': { colors: ['y', 'r'], slots: 4, type: 'advanced' },
+    '魔法戦士': { colors: ['y', 'p'], slots: 4, type: 'advanced' },
+    '海賊': { colors: ['y', 'b'], slots: 4, type: 'advanced' }
 };
 
 // 色コード変換マップ
